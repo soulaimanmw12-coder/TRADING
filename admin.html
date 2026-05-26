@@ -3,536 +3,377 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Mainframe - Mwamini</title>
+    <title>User Core Control Mainframe | Mwamini</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        .admin-tab-section {
-            display: none;
+        :root {
+            --dash-blue-deep: #1e3a8a;
+            --dash-blue-accent: #2563eb;
+            --dash-blue-light: #eff6ff;
+            --dash-bg-card: #ffffff;
+            --dash-border: #e2e8f0;
+            --dash-text: #0f172a;
+            --dash-muted: #64748b;
+            --dash-red: #ef4444;
+            --dash-green: #10b981;
+            --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
         }
-        .admin-tab-section.active {
-            display: block;
+
+        [data-theme="dark"] {
+            --dash-blue-deep: #0f172a;
+            --dash-blue-accent: #3b82f6;
+            --dash-blue-light: #1e293b;
+            --dash-bg-card: #1e293b;
+            --dash-border: #334155;
+            --dash-text: #f8fafc;
+            --dash-muted: #94a3b8;
+            --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
         }
-        .form-row {
-            margin-bottom: 1.25rem;
+
+        body {
+            background: var(--bg-primary);
+            color: var(--dash-text);
+            font-family: system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 0;
         }
-        .form-row label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2rem;
+            padding: 2.5rem 5%;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .premium-dash-card {
+            background: var(--dash-bg-card);
+            border: 1px solid var(--dash-border);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .premium-dash-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.07);
+        }
+
+        .dash-header {
+            background: var(--dash-blue-deep);
+            color: white;
+            padding: 1.5rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .canvas-container {
+            width: 100%;
+            height: 240px;
+            background: linear-gradient(180deg, rgba(37, 99, 235, 0.02) 0%, rgba(37, 99, 235, 0.08) 100%);
+            border: 1px solid var(--dash-border);
+            border-radius: 12px;
+            margin-top: 1.5rem;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .telemetry-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.85rem 0;
+            border-bottom: 1px solid var(--dash-border);
             font-size: 14px;
         }
-        .admin-nav-btn {
-            width: 100%;
-            text-align: left;
-            padding: 0.75rem 1rem;
-            margin-bottom: 0.25rem;
-            border: none;
-            background: transparent;
-            color: var(--text-muted);
-            cursor: pointer;
-            font-weight: 600;
-            border-radius: 6px;
-            transition: all 0.2s;
-        }
-        .admin-nav-btn.active-tab {
-            background: var(--accent);
-            color: white;
+
+        .telemetry-row:last-child {
+            border-bottom: none;
         }
     </style>
 </head>
 <body>
-    <header style="background: var(--bg-surface);">
-        <div class="brand-title">MWAMINI MAIN CONTROL</div>
-        <div style="display: flex; gap: 1rem;">
-            <button id="theme-toggle" class="btn" style="background: var(--border-color); color: var(--text-main); height: fit-content; align-self: center;">Theme</button>
-            <button id="logout-btn" class="btn" style="background: var(--danger); color: white; height: fit-content; align-self: center;">Terminate Session</button>
+
+    <header class="dash-header">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="background: var(--dash-blue-accent); padding: 0.5rem; border-radius: 8px;">📊</div>
+            <div>
+                <h1 style="font-size: 1.25rem; margin: 0; font-weight: 800; letter-spacing: -0.5px;">MWAMINI OPERATIONS ROOM</h1>
+                <p style="margin:0; font-size: 11px; opacity: 0.75; text-transform: uppercase;">Real-Time Logistics Node</p>
+            </div>
+        </div>
+        <div style="display: flex; gap: 0.75rem;">
+            <button onclick="window.location.href='index.html'" class="btn" style="background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2);">Return to Marketplace</button>
+            <button onclick="logoutMainframe()" class="btn" style="background: var(--dash-red); color: white;">Terminate Session</button>
         </div>
     </header>
-    <div class="admin-layout">
-        <aside class="sidebar">
-            <button class="admin-nav-btn active-tab" onclick="switchView('analytics', this)">Dashboard Analytics</button>
-            <button class="admin-nav-btn" onclick="switchView('inventory', this)">Inventory Matrix</button>
-            <button class="admin-nav-btn" onclick="switchView('orders', this)">Customer Orders Log</button>
-            <button class="admin-nav-btn" onclick="switchView('comments', this)">Customer Comments</button>
-            <button class="admin-nav-btn" onclick="switchView('users', this)">Registered Users</button>
-            <button class="admin-nav-btn" onclick="switchView('announcements', this)">Announcements</button>
-            <button class="admin-nav-btn" onclick="switchView('settings', this)">System Settings</button> 
-        </aside>
 
-        <main class="admin-mainframe" style="padding: 2rem;">
-            <div id="global-toast" style="position: fixed; top: 20px; right: 20px; background: var(--bg-surface); padding: 1rem; border-left: 4px solid var(--success); box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: none; z-index: 100;"></div>
+    <div id="dash-toast-system" class="toast-ui" style="position: fixed; top: 20px; right: 20px; border-left-width: 4px; border-left-style: solid; background: var(--dash-bg-card); padding: 1rem 2rem; box-shadow: var(--card-shadow); border-radius: 8px; z-index: 999; display:none;"></div>
 
-            <div id="section-analytics" class="admin-tab-section active">
-                <h2>Dashboard Analytics Matrix</h2>
-                <div style="max-width: 600px; margin-top: 2rem; background: var(--bg-surface); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color);">
-                    <canvas id="ordersChart"></canvas>
+    <main class="dashboard-grid">
+        
+        <div class="premium-dash-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--dash-border); padding-bottom: 1rem;">
+                    <img id="profile-avatar-display" src="https://via.placeholder.com/60" style="width: 55px; height: 55px; border-radius: 50%; object-fit: cover; border: 2px solid var(--dash-blue-accent);">
+                    <div>
+                        <h3 id="profile-name-display" style="margin: 0; font-size: 1.15rem; font-weight: 700;">Loading Profile...</h3>
+                        <p id="profile-hub-display" style="margin: 0; font-size: 13px; color: var(--dash-blue-accent); font-weight: 600;">Securing clearance details...</p>
+                    </div>
                 </div>
-            </div>
-
-            <div id="section-inventory" class="admin-tab-section">
-                <h2>Inventory Asset Matrix</h2>
-                <form id="product-form" style="background: var(--bg-surface); padding: 1.5rem; border-radius: 12px; border:1px solid var(--border-color); max-width: 500px; margin: 1.5rem 0;">
-                    <input type="hidden" id="prod-id">
-                    <div class="form-row">
-                        <label>Product Name</label>
-                        <input type="text" id="prod-title" class="search-input" style="width: 100%;" required>
-                    </div>
-                    <div class="form-row">
-                        <label>Category</label>
-                        <select id="prod-category" class="filter-select" style="width: 100%;">
-                            <option value="Grains">Grains</option>
-                            <option value="Agriculture">Agriculture</option>
-                            <option value="Construction">Construction</option>
-                            <option value="Electronics">Electronics</option>
-                        </select>
-                    </div>
-                    <div class="form-row">
-                        <label>Price Matrix</label>
-                        <input type="number" id="prod-price" class="search-input" style="width: 100%;" required>
-                    </div>
-                    <div class="form-row">
-                        <label>Stock Allocation Quantities</label>
-                        <input type="number" id="prod-quantity" class="search-input" style="width: 100%;" required>
-                    </div>
-                    <div class="form-row">
-                        <label>Detailed Specifications Description</label>
-                        <textarea id="prod-desc" class="search-input" style="width: 100%; height: 80px;" required></textarea>
-                    </div>
-                    <div class="form-row">
-                        <label>Public Asset Upload Path / URL</label>
-                        <input type="text" id="prod-image" class="search-input" style="width: 100%;" placeholder="https://...">
-                    </div>
-                    <button type="submit" class="btn btn-primary">Commit Commodity File</button>
-                </form>
-                <table class="dashboard-table" style="width: 100%;">
-                    <thead>
-                        <tr>
-                            <th>Image</th>
-                            <th>Nomenclature</th>
-                            <th>Category</th>
-                            <th>Value</th>
-                            <th>Stock Allocation</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="inventory-tbody"></tbody>
-                </table>
-            </div>
-
-            <div id="section-orders" class="admin-tab-section">
-                <h2>Fulfillment Logistics Registry</h2>
-                <table class="dashboard-table" style="width: 100%; margin-top: 1.5rem;">
-                    <thead>
-                        <tr>
-                            <th>Recipient</th>
-                            <th>Product Cargo</th>
-                            <th>Freight Hub</th>
-                            <th>Fulfillment State</th>
-                            <th>Operations</th>
-                        </tr>
-                    </thead>
-                    <tbody id="orders-tbody"></tbody>
-                </table>
-            </div>
-
-            <div id="section-comments" class="admin-tab-section">
-                <h2>User Feedback Logs</h2>
-                <div id="comments-container" style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1.5rem;"></div>
-            </div>
-
-            <div id="section-settings" class="admin-tab-section">
-                <h2>System Core Variables</h2>
-                <div style="background: var(--bg-surface); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color); max-width: 450px; margin-top: 1.5rem;">
-                    <div class="form-row">
-                        <label>Simulated Active Users Badge Monitor</label>
-                        <input type="number" id="setting-online-count" class="search-input" style="width: 100%;">
-                    </div>
-                    <button onclick="saveSystemSettings()" class="btn btn-primary">Apply Settings Payload</button>
-                </div>
-            </div>
-
-            <div id="section-users" class="admin-tab-section">
-                <h2>Registered Platform Customer Accounts</h2>
-                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 1.5rem;">Monitor enterprise customer contact channels and secure telemetry profiles.</p>
-                <table class="dashboard-table" style="width: 100%;">
-                    <thead>
-                        <tr style="background: var(--border-color);">
-                            <th>Avatar</th>
-                            <th>Identity Name</th>
-                            <th>Email Target Address</th>
-                            <th>Phone Contact</th>
-                            <th>Assigned Logistics Hub</th>
-                        </tr>
-                    </thead>
-                    <tbody id="users-tbody">
-                        <tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">Syncing secure profile listings...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <div id="section-announcements" class="admin-tab-section">
-                <h2>Platform Announcement Framework</h2>
-                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 1.5rem;">Broadcast news flashes, routing disruptions, or updates directly to the customer dashboard.</p>
                 
-                <form id="announcement-creation-form" style="background: var(--bg-surface); padding: 1.5rem; border-radius: 12px; border:1px solid var(--border-color); max-width: 500px; margin-bottom: 2.5rem;">
-                    <div class="form-row">
-                        <label>Announcement Heading Title</label>
-                        <input type="text" id="ann-title" class="search-input" style="width: 100%;" placeholder="e.g. Bulk Wheat Logistics Alert" required>
-                    </div>
-                    <div class="form-row">
-                        <label>Broadcast Message Payload</label>
-                        <textarea id="ann-content" class="search-input" style="width: 100%; height: 90px;" placeholder="Type system notifications parameters here..." required></textarea>
-                    </div>
-                    <div class="form-row">
-                        <label>Cover Illustration Image Link/URL</label>
-                        <input type="url" id="ann-image" class="search-input" style="width: 100%;" placeholder="https://example.com/asset.jpg">
-                    </div>
-                    <button type="submit" class="btn btn-primary">Publish Broadcast Update</button>
-                </form>
+                <h4 style="margin: 0 0 0.75rem 0; font-size: 14px; text-transform: uppercase; color: var(--dash-muted); letter-spacing: 0.5px;">Account Metadata</h4>
+                <div class="telemetry-row"><span>Authorized Email:</span><span id="profile-email-value" style="font-weight: 600;">-</span></div>
+                <div class="telemetry-row"><span>Secure Comm Line:</span><span id="profile-phone-value" style="font-weight: 600;">-</span></div>
+                <div class="telemetry-row"><span>Primary Workspace Location:</span><span id="profile-loc-value" style="font-weight: 600;">-</span></div>
+            </div>
+            <div style="margin-top: 1.5rem; background: var(--dash-blue-light); padding: 1rem; border-radius: 8px; font-size: 12px; color: var(--dash-blue-deep); line-height: 1.5;">
+                🔒 Account encryption authenticated against secure Supabase backend clusters.
+            </div>
+        </div>
 
-                <h3>Historical Announcement Ledger</h3>
-                <table class="dashboard-table" style="width: 100%;">
-                    <thead>
-                        <tr>
-                            <th>Cover Asset</th>
-                            <th>Broadcast Heading</th>
-                            <th>Message Text Body</th>
-                            <th>Visibility Status</th>
-                            <th>Operations</th>
-                        </tr>
-                    </thead>
-                    <tbody id="announcements-tbody">
-                        <tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">Syncing announcement records...</td></tr>
-                    </tbody>
-                </table>
+        <div class="premium-dash-card" style="grid-column: span 1;">
+            <h3 style="margin: 0 0 0.5rem 0; font-size: 1.2rem; font-weight: 800;">Freight Manifest Tracking</h3>
+            <p style="color: var(--dash-muted); font-size: 13px; margin: 0 0 1.25rem 0;">Real-time transaction log for current pipeline orders.</p>
+            
+            <div id="manifest-loading-placeholder" style="text-align: center; padding: 2rem; color: var(--dash-muted); font-size: 14px;">
+                Syncing with freight registries...
+            </div>
+            
+            <div id="manifest-items-box" style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 280px; overflow-y: auto; padding-right: 0.25rem;"></div>
+        </div>
+
+        <div class="premium-dash-card" style="grid-column: 1 / -1;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h3 style="margin: 0; font-size: 1.25rem; font-weight: 800;">Ambient Agricultural Synthesis Canvas</h3>
+                    <p style="margin: 0.25rem 0 0 0; color: var(--dash-muted); font-size: 13px;">Visual reactive mapping of successful delivery dispatches.</p>
+                </div>
+                <div style="background: var(--dash-blue-light); color: var(--dash-blue-accent); padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 12px; font-weight: 700;" id="garden-telemetry-badge">
+                    0 Safe Dispatches Mapped
+                </div>
             </div>
 
-        </main>
-    </div>
+            <div class="canvas-container">
+                <canvas id="ambientGardenCanvas" style="display: block; width: 100%; height: 100%;"></canvas>
+            </div>
+        </div>
+
+    </main>
 
     <script src="supabase-config.js"></script>
     <script>
-        let localProducts = [];
-        let analyticsChartInstance = null;
+        let authorizedUser = null;
+        let ambientCanvas = null;
+        let canvasCtx = null;
+        let successfulDispatchesCounter = 0;
+
+        // Interactive Canvas Animation State Trackers
+        let plantEntities = [];
+        let canvasLoopAnimationId = null;
+        let gardenPulseFactor = 1.0;
 
         document.addEventListener("DOMContentLoaded", async () => {
-            const { data: { session } } = await window.supabase.auth.getSession();
-            if (!session) {
-                window.location.replace("login.html");
+            if(!window.supabase) {
+                alert("Database config array not found.");
                 return;
             }
 
-            initializeThemeSystem();
-            loadAnalyticsEngine();
-            loadInventoryEngine();
-            loadOrdersQueue();
-            loadUserComments();
-            loadSystemSettingsForm();
-            loadRegisteredUsersRegistry();
-            loadAnnouncementsLedger();
+            const { data: { session } } = await window.supabase.auth.getSession();
+            if(!session) {
+                window.location.replace("index.html");
+                return;
+            }
 
-            document.getElementById("product-form").addEventListener("submit", commitProductFile);
-            document.getElementById("announcement-creation-form").addEventListener("submit", commitAnnouncementPayload);
-            document.getElementById("logout-btn").addEventListener("click", terminateSession);
+            authorizedUser = session.user;
+            await extractProfileMetadata();
+            await pullFreightOrdersPayload();
+            initializeInteractiveCanvasEnvironment();
+            initializeRealtimeTelemetrySync();
         });
 
-        function initializeThemeSystem() {
-            const root = document.documentElement;
-            document.getElementById('theme-toggle').addEventListener('click', () => {
-                const activeTheme = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-                root.setAttribute('data-theme', activeTheme);
+        async function extractProfileMetadata() {
+            const { data, error } = await window.supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', authorizedUser.id)
+                .single();
+
+            if (data) {
+                document.getElementById('profile-name-display').innerText = data.full_name || 'Enterprise Client';
+                document.getElementById('profile-hub-display').innerText = `📍 Hub: ${data.delivery_destination || 'Unassigned Workspace'}`;
+                document.getElementById('profile-email-value').innerText = data.email || authorizedUser.email;
+                document.getElementById('profile-phone-value').innerText = data.phone || 'None Listed';
+                document.getElementById('profile-loc-value').innerText = data.location || 'Not Specified';
+                if(data.avatar_url) {
+                    document.getElementById('profile-avatar-display').src = data.avatar_url;
+                }
+            }
+        }
+
+        async function pullFreightOrdersPayload() {
+            const { data: orders, error } = await window.supabase
+                .from('orders')
+                .select('*')
+                .eq('user_id', authorizedUser.id)
+                .order('created_at', { ascending: false });
+
+            document.getElementById('manifest-loading-placeholder').style.display = 'none';
+            const container = document.getElementById('manifest-items-box');
+            container.innerHTML = '';
+
+            if(!orders || orders.length === 0) {
+                container.innerHTML = `<p style="text-align:center; padding:2rem; font-size:13px; color:var(--dash-muted); margin:0;">No tracked dispatches mapped into your workspace manifest.</p>`;
+                successfulDispatchesCounter = 0;
+                return;
+            }
+
+            successfulDispatchesCounter = orders.filter(o => o.status === 'Delivered').length;
+            document.getElementById('garden-telemetry-badge').innerText = `${successfulDispatchesCounter} Safe Dispatches Mapped`;
+
+            orders.forEach(o => {
+                const itemBlock = document.createElement('div');
+                itemBlock.style.cssText = "background:var(--bg-primary); border:1px solid var(--dash-border); padding:1rem; border-radius:10px; display:flex; justify-content:space-between; align-items:center;";
+                
+                let stateBadgeColor = 'var(--dash-muted)';
+                if(o.status === 'Processing') stateBadgeColor = 'var(--dash-blue-accent)';
+                if(o.status === 'Delivered') stateBadgeColor = 'var(--dash-green)';
+
+                itemBlock.innerHTML = `
+                    <div>
+                        <h4 style="margin:0 0 0.25rem 0; font-size:14px; font-weight:700;">${o.product_title}</h4>
+                        <p style="margin:0; font-size:12px; color:var(--dash-muted);">Qty Required: <strong>${o.quantity}</strong> &bull; Ref: #${o.id.substring(0,6).toUpperCase()}</p>
+                    </div>
+                    <span style="background:${stateBadgeColor}; color:white; font-size:11px; padding:4px 8px; border-radius:4px; font-weight:700; text-transform:uppercase;">${o.status}</span>
+                `;
+                container.appendChild(itemBlock);
             });
+
+            // Re-trigger visual ecosystem scaling
+            generateEcosystemPlants();
         }
 
-        function switchView(tabId, buttonEl) {
-            document.querySelectorAll('.admin-tab-section').forEach(section => section.classList.remove('active'));
-            document.querySelectorAll('.admin-nav-btn').forEach(btn => btn.classList.remove('active-tab'));
+        // --- INTERACTIVE GRAPHICS ENGINE LOOP ---
+        function initializeInteractiveCanvasEnvironment() {
+            ambientCanvas = document.getElementById('ambientGardenCanvas');
+            canvasCtx = ambientCanvas.getContext('2d');
+
+            fitCanvasBounds();
+            window.addEventListener('resize', fitCanvasBounds);
+
+            // Execute rendering sequence
+            renderEcosystemLoop();
             
-            document.getElementById(`section-${tabId}`).classList.add('active');
-            buttonEl.classList.add('active-tab');
+            // Generate micro interaction pulse triggers
+            setInterval(() => {
+                gardenPulseFactor = 1.25;
+                setTimeout(() => { gardenPulseFactor = 1.0; }, 250);
+            }, 4000);
         }
 
-        function showToast(msg) {
-            const el = document.getElementById("global-toast");
-            el.innerText = msg;
-            el.style.display = "block";
-            setTimeout(() => el.style.display = "none", 3500);
+        function fitCanvasBounds() {
+            if(!ambientCanvas) return;
+            const boundingBox = ambientCanvas.parentElement.getBoundingClientRect();
+            ambientCanvas.width = boundingBox.width;
+            ambientCanvas.height = 240;
+            generateEcosystemPlants();
         }
 
-        function escapeHTML(str) {
-            if(!str) return '';
-            const div = document.createElement('div');
-            div.textContent = str;
-            return div.innerHTML;
+        function generateEcosystemPlants() {
+            plantEntities = [];
+            const quantityToGenerate = Math.max(2, successfulDispatchesCounter * 2);
+            const horizontalSegment = ambientCanvas.width / (quantityToGenerate + 1);
+
+            for (let idx = 1; idx <= quantityToGenerate; idx++) {
+                plantEntities.push({
+                    xCoord: idx * horizontalSegment + (Math.random() * 15 - 7.5),
+                    maxHeight: 50 + (Math.random() * 60),
+                    currentGrowthHeight: 0,
+                    swayCoefficient: Math.random() * 100,
+                    stemColor: `hsl(${120 + (Math.random() * 30)}, 75%, ${35 + (Math.random() * 15)}%)`,
+                    leafDiameter: 6 + (Math.random() * 8)
+                });
+            }
         }
 
-        async function terminateSession() {
-            await window.supabase.auth.signOut();
+        function renderEcosystemLoop() {
+            canvasCtx.clearRect(0, 0, ambientCanvas.width, ambientCanvas.height);
+
+            // Render background structural horizon baseline
+            canvasCtx.strokeStyle = 'var(--dash-border)';
+            canvasCtx.lineWidth = 2;
+            canvasCtx.beginPath();
+            canvasCtx.moveTo(0, ambientCanvas.height - 20);
+            canvasCtx.lineTo(ambientCanvas.width, ambientCanvas.height - 20);
+            canvasCtx.stroke();
+
+            const simulationTime = Date.now() * 0.002;
+
+            plantEntities.forEach(p => {
+                // Growth delta modeling equations
+                if(p.currentGrowthHeight < p.maxHeight) {
+                    p.currentGrowthHeight += 0.65;
+                }
+
+                // Dynamic environmental sway physics calculations
+                const environmentSway = Math.sin(simulationTime + p.swayCoefficient) * 6 * gardenPulseFactor;
+                const groundY = ambientCanvas.height - 20;
+                const tipX = p.xCoord + environmentSway;
+                const tipY = groundY - p.currentGrowthHeight;
+
+                // Trace structural cell vectors
+                canvasCtx.strokeStyle = p.stemColor;
+                canvasCtx.lineWidth = 4;
+                canvasCtx.lineCap = 'round';
+                canvasCtx.beginPath();
+                canvasCtx.moveTo(p.xCoord, groundY);
+                canvasCtx.quadraticCurveTo(p.xCoord + (environmentSway * 0.3), groundY - (p.currentGrowthHeight * 0.5), tipX, tipY);
+                canvasCtx.stroke();
+
+                // Draw photosynthetic node nodes
+                canvasCtx.fillStyle = p.stemColor;
+                canvasCtx.beginPath();
+                canvasCtx.arc(tipX, tipY, p.leafDiameter * 0.75, 0, Math.PI * 2);
+                canvasCtx.fill();
+
+                canvasCtx.fillStyle = '#10b981';
+                canvasCtx.beginPath();
+                canvasCtx.arc(tipX - 5, tipY - 2, 4, 0, Math.PI * 2);
+                canvasCtx.arc(tipX + 5, tipY - 2, 4, 0, Math.PI * 2);
+                canvasCtx.fill();
+            });
+
+            canvasLoopAnimationId = requestAnimationFrame(renderEcosystemLoop);
+        }
+
+        function initializeRealtimeTelemetrySync() {
+            if(!window.supabase) return;
+
+            window.supabase.channel('dashboard-live-orders-trigger')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, async () => {
+                    showDashToast("Manifest update registered. Synchronizing controls...");
+                    await pullFreightOrdersPayload();
+                }).subscribe();
+        }
+
+        function showDashToast(message) {
+            const toast = document.getElementById('dash-toast-system');
+            if(!toast) return;
+            toast.innerText = message;
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 3500);
+        }
+
+        async function logoutMainframe() {
+            if(window.supabase) {
+                await window.supabase.auth.signOut();
+            }
             window.location.replace("index.html");
         }
-
-        // --- ANALYTICS TAB ENGINE ---
-        async function loadAnalyticsEngine() {
-            const { data: orders } = await window.supabase.from('orders').select('status');
-            const metrics = { Pending: 0, Processing: 0, Delivered: 0 };
-            orders?.forEach(o => { if(metrics[o.status] !== undefined) metrics[o.status]++; });
-
-            const ctx = document.getElementById('ordersChart').getContext('2d');
-            if (analyticsChartInstance) analyticsChartInstance.destroy();
-
-            analyticsChartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: Object.keys(metrics),
-                    datasets: [{
-                        label: 'Active Dispatches Metric Count',
-                        data: Object.values(metrics),
-                        backgroundColor: ['#f59e0b', '#2563eb', '#10b981']
-                    }]
-                },
-                options: { responsive: true, scales: { y: { beginAtZero: true } } }
-            });
-        }
-
-        // --- INVENTORY TAB ENGINE ---
-        async function loadInventoryEngine() {
-            const { data: prods } = await window.supabase.from('products').select('*').order('created_at', { ascending: false });
-            localProducts = prods || [];
-            const tbody = document.getElementById("inventory-tbody");
-            tbody.innerHTML = "";
-
-            localProducts.forEach(p => {
-                const row = document.createElement("tr");
-                row.innerHTML = `
-                    <td><img src="${p.image_url || 'https://via.placeholder.com/50'}" style="width:40px; height:40px; object-fit:cover; border-radius:4px;"></td>
-                    <td><strong>${escapeHTML(p.title)}</strong></td>
-                    <td>${escapeHTML(p.category)}</td>
-                    <td>$${p.price}</td>
-                    <td>${p.quantity} Units</td>
-                    <td>
-                        <button onclick="editProduct('${p.id}')" class="btn" style="padding:4px 8px; font-size:12px; margin-right:4px;">Edit</button>
-                        <button onclick="deleteProduct('${p.id}')" class="btn" style="padding:4px 8px; font-size:12px; background:var(--danger); color:white;">Remove</button>
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-
-        window.editProduct = (id) => {
-            const p = localProducts.find(x => x.id === id);
-            if (!p) return;
-            document.getElementById("prod-id").value = p.id;
-            document.getElementById("prod-title").value = p.title;
-            document.getElementById("prod-category").value = p.category;
-            document.getElementById("prod-price").value = p.price;
-            document.getElementById("prod-quantity").value = p.quantity;
-            document.getElementById("prod-desc").value = p.description;
-            document.getElementById("prod-image").value = p.image_url || '';
-            showToast("SKU properties parsed into modification form.");
-        };
-
-        async function commitProductFile(e) {
-            e.preventDefault();
-            const id = document.getElementById("prod-id").value;
-            const payload = {
-                title: document.getElementById("prod-title").value.trim(),
-                category: document.getElementById("prod-category").value,
-                price: parseFloat(document.getElementById("prod-price").value),
-                quantity: parseInt(document.getElementById("prod-quantity").value, 10),
-                description: document.getElementById("prod-desc").value.trim(),
-                image_url: document.getElementById("prod-image").value.trim() || null
-            };
-
-            if (id) {
-                await window.supabase.from('products').update(payload).eq('id', id);
-                showToast("Product file modified successfully.");
-            } else {
-                await window.supabase.from('products').insert([payload]);
-                showToast("New product logged into database.");
-            }
-            document.getElementById("product-form").reset();
-            document.getElementById("prod-id").value = "";
-            loadInventoryEngine();
-        }
-
-        window.deleteProduct = async (id) => {
-            if (!confirm("Delete product asset file from storage matrix?")) return;
-            await window.supabase.from('products').delete().eq('id', id);
-            showToast("Product configuration purged.");
-            loadInventoryEngine();
-        };
-
-        // --- ORDER FULFILLMENT REGISTRY LOGS ---
-        async function loadOrdersQueue() {
-            const { data: rows } = await window.supabase.from('orders').select('*').order('created_at', { ascending: false });
-            const tbody = document.getElementById("orders-tbody");
-            tbody.innerHTML = "";
-
-            rows?.forEach(o => {
-                const row = document.createElement("tr");
-                row.innerHTML = `
-                    <td><strong>${escapeHTML(o.customer_name)}</strong><br><small>${escapeHTML(o.customer_phone)}</small></td>
-                    <td><strong>${escapeHTML(o.product_title)}</strong><br><small>Quantity: ${o.quantity}</small></td>
-                    <td>${escapeHTML(o.location || 'N/A')}</td>
-                    <td>
-                        <select onchange="updateOrderStatus('${o.id}', this.value)" style="padding:6px; border-radius:4px;">
-                            <option ${o.status === 'Pending' ? 'selected' : ''}>Pending</option>
-                            <option ${o.status === 'Processing' ? 'selected' : ''}>Processing</option>
-                            <option ${o.status === 'Delivered' ? 'selected' : ''}>Delivered</option>
-                        </select>
-                    </td>
-                    <td><button onclick="archiveOrderRecord('${o.id}')" class="btn" style="background:var(--border-color); font-size:12px; padding:4px 8px;">Archive</button></td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-
-        window.updateOrderStatus = async (id, val) => {
-            await window.supabase.from('orders').update({ status: val }).eq('id', id);
-            showToast(`Fulfillment state set to ${val}`);
-            loadAnalyticsEngine();
-        };
-
-        window.archiveOrderRecord = async (id) => {
-            if(!confirm("Archive order listing?")) return;
-            await window.supabase.from('orders').delete().eq('id', id);
-            showToast("Record archived from queue.");
-            loadOrdersQueue();
-            loadAnalyticsEngine();
-        };
-
-        // --- CONSUMER COMMENTS LOGS ---
-        async function loadUserComments() {
-            const { data: comments } = await window.supabase.from('inquiries').select('*').order('created_at', { ascending: false });
-            const container = document.getElementById("comments-container");
-            container.innerHTML = "";
-
-            if (!comments || comments.length === 0) {
-                container.innerHTML = "<p style='color:var(--text-muted); font-size:14px;'>No tickets reported.</p>";
-                return;
-            }
-
-            comments.forEach(c => {
-                const block = document.createElement("div");
-                block.style.cssText = "background:var(--bg-surface); padding:1rem; border-radius:8px; border:1px solid var(--border-color);";
-                block.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;">
-                        <strong>${escapeHTML(c.name)} [${escapeHTML(c.category)}]</strong>
-                        <small style="color:var(--text-muted);">${new Date(c.created_at).toLocaleDateString()}</small>
-                    </div>
-                    <p style="margin:0 0 0.5rem 0; font-size:14px; color:var(--text-main);">Subject: <strong>${escapeHTML(c.subject)}</strong></p>
-                    <p style="margin:0; font-size:13px; color:var(--text-muted);">${escapeHTML(c.message)}</p>
-                `;
-                container.appendChild(block);
-            });
-        }
-
-        // --- SYSTEM CORE SETTINGS ---
-        async function loadSystemSettingsForm() {
-            const { data } = await window.supabase.from('system_settings').select('*').eq('setting_key', 'displayed_online_users').single();
-            if (data) {
-                document.getElementById("setting-online-count").value = data.setting_value;
-            }
-        }
-
-        window.saveSystemSettings = async () => {
-            const val = parseInt(document.getElementById("setting-online-count").value, 10) || 0;
-            await window.supabase.from('system_settings').upsert({ setting_key: 'displayed_online_users', setting_value: val });
-            showToast("Active telemetry multiplier applied platform-wide.");
-        };
-
-        // --- REGISTERED PLATFORM CUSTOMERS ---
-        async function loadRegisteredUsersRegistry() {
-            const tbody = document.getElementById("users-tbody");
-            const { data, error } = await window.supabase.from('profiles').select('*');
-            
-            if(error) {
-                tbody.innerHTML = `<tr><td colspan='5' style='color:var(--danger); text-align:center;'>Error reading secure parameters: ${error.message}</td></tr>`;
-                return;
-            }
-
-            tbody.innerHTML = '';
-            if(!data || data.length === 0) {
-                tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; padding:2rem; color:var(--text-muted);'>No enterprise profiles discovered.</td></tr>";
-                return;
-            }
-
-            data.forEach(user => {
-                const pic = user.avatar_url ? `<img src="${user.avatar_url}" style="width:34px; height:34px; border-radius:50%; object-fit:cover;">` : `<div style="width:34px; height:34px; border-radius:50%; background:var(--border-color); display:inline-block;"></div>`;
-                const tr = document.createElement("tr");
-                tr.innerHTML = `
-                    <td style="padding:10px; border-bottom:1px solid var(--border-color); text-align:center;">${pic}</td>
-                    <td style="padding:10px; border-bottom:1px solid var(--border-color);"><strong>${escapeHTML(user.full_name || 'Guest User')}</strong></td>
-                    <td style="padding:10px; border-bottom:1px solid var(--border-color); font-family:monospace; font-size:13px;">${escapeHTML(user.email || 'N/A')}</td>
-                    <td style="padding:10px; border-bottom:1px solid var(--border-color); font-size:13px;">${escapeHTML(user.phone || 'N/A')}</td>
-                    <td style="padding:10px; border-bottom:1px solid var(--border-color); font-weight:600; color:var(--accent);">${escapeHTML(user.delivery_destination || user.location || 'Unassigned Hub')}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        // --- ADMIN ANNOUNCEMENT BROADCAST MANAGEMENT ---
-        async function loadAnnouncementsLedger() {
-            const tbody = document.getElementById("announcements-tbody");
-            const { data } = await window.supabase.from('announcements').select('*').order('created_at', { ascending: false });
-            
-            tbody.innerHTML = '';
-            if(!data || data.length === 0) {
-                tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; padding:2rem; color:var(--text-muted);'>No system notifications found in active rows.</td></tr>";
-                return;
-            }
-
-            data.forEach(a => {
-                const tr = document.createElement("tr");
-                const isLive = a.active !== false;
-                const badgeState = isLive ? `<span style="color:var(--success); font-weight:700;">Live Feed</span>` : `<span style="color:var(--text-muted); font-style:italic;">Soft Deleted</span>`;
-                
-                const toggleBtn = isLive ? 
-                    `<button class="btn" style="padding:4px 8px; font-size:11px; background:var(--danger); color:white;" onclick="toggleAnnouncementFeedState('${a.id}', false)">Delete</button>` :
-                    `<button class="btn" style="padding:4px 8px; font-size:11px; background:var(--success); color:white;" onclick="toggleAnnouncementFeedState('${a.id}', true)">Restore</button>`;
-
-                tr.innerHTML = `
-                    <td><img src="${a.image_url || 'https://via.placeholder.com/60'}" style="width:40px; height:40px; object-fit:cover; border-radius:6px;"></td>
-                    <td><strong>${escapeHTML(a.title)}</strong></td>
-                    <td><div style="max-width:250px; font-size:12px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHTML(a.content)}</div></td>
-                    <td>${badgeState}</td>
-                    <td>${toggleBtn}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        async function commitAnnouncementPayload(e) {
-            e.preventDefault();
-            const title = document.getElementById("ann-title").value.trim();
-            const content = document.getElementById("ann-content").value.trim();
-            const imageUrl = document.getElementById("ann-image").value.trim() || null;
-
-            const { error } = await window.supabase.from('announcements').insert([{
-                title,
-                content,
-                image_url: imageUrl,
-                active: true,
-                likes_count: 0,
-                comments_list: []
-            }]);
-
-            if(error) {
-                alert("Creation Error: " + error.message);
-            } else {
-                showToast("System announcement pushed to public view arrays.");
-                document.getElementById("announcement-creation-form").reset();
-                loadAnnouncementsLedger();
-            }
-        }
-
-        window.toggleAnnouncementFeedState = async (id, targetState) => {
-            await window.supabase.from('announcements').update({ active: targetState }).eq('id', id);
-            showToast(targetState ? "Announcement item successfully restored." : "Announcement deactivated.");
-            loadAnnouncementsLedger();
-        };
     </script>
 </body>
 </html>
